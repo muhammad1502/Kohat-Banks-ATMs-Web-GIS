@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Web GIS of bank branches and ATMs in Kohat District, Khyber Pakhtunkhwa. Data stored in PostgreSQL with PostGIS and served to a Leaflet map through an Express API.">
+  <meta name="author" content="Muhammad Abdullah">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fafafc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#161617" media="(prefers-color-scheme: dark)">
+  <title>Kohat Banks and ATMs | Web GIS</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+  <script src="theme-init.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#map">Skip to map</a>
+
+  <header class="globalnav">
+    <div class="globalnav-inner">
+      <a class="brand" href="#top" id="brand">
+        <svg class="brand-mark" viewBox="0 0 28 28" width="28" height="28" aria-hidden="true">
+          <rect width="28" height="28" rx="7"/>
+          <path d="M14 6.5c-3.3 0-6 2.6-6 5.9 0 4.3 6 9.6 6 9.6s6-5.3 6-9.6c0-3.3-2.7-5.9-6-5.9Zm0 8.3a2.4 2.4 0 1 1 0-4.8 2.4 2.4 0 0 1 0 4.8Z"/>
+        </svg>
+        <span>Kohat Banks and ATMs</span>
+      </a>
+      <nav aria-label="Sections">
+        <a href="#map-section">Map</a>
+        <a href="#study-area">Study area</a>
+        <a href="#data">Data</a>
+        <a href="#api">API</a>
+      </nav>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Dark mode" aria-pressed="false">
+        <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20.7 14.6A8.5 8.5 0 0 1 9.4 3.3a.75.75 0 0 0-.98-.94A10 10 0 1 0 21.64 15.6a.75.75 0 0 0-.94-.98Z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.8v2.4M12 19.8v2.4M1.8 12h2.4M19.8 12h2.4M4.8 4.8l1.7 1.7M17.5 17.5l1.7 1.7M4.8 19.2l1.7-1.7M17.5 6.5l1.7-1.7"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="viewport-content">
+        <p class="eyebrow">Web GIS Application midterm project</p>
+        <h1 id="hero-title">Banks and ATMs in Kohat</h1>
+        <p class="hero-subhead">Bank branches and cash machines across Kohat District, Khyber Pakhtunkhwa, read live from a PostGIS database.</p>
+        <div class="button-group">
+          <a class="button" href="#map-section">
+            <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m9 4-6 2.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5L9 4Z"/><path d="M9 4v13.5M15 6.5V20"/></svg>
+            Open the map
+          </a>
+          <a class="button button-secondary" href="#api">
+            <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m8 7-5 5 5 5M16 7l5 5-5 5"/></svg>
+            Read the API
+          </a>
+        </div>
+        <dl class="facts" aria-label="Database summary">
+          <div><dt>Locations</dt><dd data-stat="points">24</dd></div>
+          <div><dt>Bank branches</dt><dd data-stat="branches">19</dd></div>
+          <div><dt>Standalone ATMs</dt><dd data-stat="atms">5</dd></div>
+          <div><dt>Banks</dt><dd data-stat="banks">5</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="map-section" aria-labelledby="map-title">
+      <div class="viewport-content section-head">
+        <h2 id="map-title">Map of branches and ATMs</h2>
+        <p>Every marker is a row in the <code>banking_points</code> table. Filter the list, click a marker for its details, or switch on nearest search and click anywhere on the map.</p>
+      </div>
+
+      <div class="map-shell">
+        <aside class="panel" aria-label="Filters and results">
+          <form class="filters" id="filters" role="search">
+            <label class="field field-search">
+              <span class="visually-hidden">Search by name or place</span>
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+              <input type="search" name="q" id="filter-q" placeholder="Search by name or place" maxlength="80" autocomplete="off">
+            </label>
+
+            <fieldset class="segmented">
+              <legend class="visually-hidden">Type</legend>
+              <label><input type="radio" name="type" value="" checked><span>All</span></label>
+              <label><input type="radio" name="type" value="Branch"><span>Branches</span></label>
+              <label><input type="radio" name="type" value="ATM"><span>ATMs</span></label>
+            </fieldset>
+
+            <div class="field-row">
+              <label class="field">
+                <span class="label">Bank</span>
+                <select name="bank" id="filter-bank"><option value="">All banks</option></select>
+              </label>
+              <label class="field">
+                <span class="label">Tehsil</span>
+                <select name="tehsil" id="filter-tehsil"><option value="">All tehsils</option></select>
+              </label>
+            </div>
+
+            <div class="filter-actions">
+              <button class="chip" type="button" id="nearest-toggle" aria-pressed="false">
+                <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                Nearest search
+              </button>
+              <button class="text-button" type="reset" id="filter-reset">Reset</button>
+            </div>
+          </form>
+
+          <p class="result-count" id="result-count" aria-live="polite">Loading points from the database</p>
+          <ol class="results" id="results"></ol>
+        </aside>
+
+        <div class="map-area">
+          <div id="map" aria-label="Map of bank branches and ATMs in Kohat District"></div>
+          <p class="map-hint" id="map-hint" hidden>Click the map to find the three nearest points</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="study-area" aria-labelledby="area-title">
+      <div class="viewport-content">
+        <div class="section-head">
+          <h2 id="area-title">Study area</h2>
+          <p>Kohat District lies south of Peshawar in Kohat Division of Khyber Pakhtunkhwa. Kohat city is the district headquarters, and the Indus Highway (N-55) reaches it from Peshawar through the Kohat Tunnel.</p>
+        </div>
+
+        <div class="card-grid">
+          <article class="card">
+            <h3>Kohat District</h3>
+            <dl class="spec-list">
+              <div><dt>Province</dt><dd>Khyber Pakhtunkhwa</dd></div>
+              <div><dt>Division</dt><dd>Kohat</dd></div>
+              <div><dt>Tehsils</dt><dd>Kohat, Lachi, Gumbat, Dara Adam Khel</dd></div>
+              <div><dt>Population, 2023 census</dt><dd>1,234,661</dd></div>
+              <div><dt>Area of the mapped outline</dt><dd><span data-area="Kohat District">3,483</span> km²</dd></div>
+              <div><dt>Headquarters</dt><dd>Kohat city</dd></div>
+            </dl>
+            <p class="footnote">The outline is the OpenStreetMap district boundary, which includes Darra Adam Khel, the former Frontier Region Kohat. Its area is measured in PostGIS with <code>ST_Area</code> on the geography type.</p>
+          </article>
+
+          <article class="card">
+            <h3>Tehsils</h3>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr><th scope="col">Tehsil</th><th scope="col">Population</th><th scope="col">Area, km²</th><th scope="col">Points</th></tr>
+                </thead>
+                <tbody id="tehsil-rows">
+                  <tr><th scope="row">Kohat</th><td>817,610</td><td>1,121.8</td><td>19</td></tr>
+                  <tr><th scope="row">Lachi</th><td>152,682</td><td>1,127.1</td><td>3</td></tr>
+                  <tr><th scope="row">Dara Adam Khel</th><td>139,839</td><td>454.0</td><td>1</td></tr>
+                  <tr><th scope="row">Gumbat</th><td>124,530</td><td>780.0</td><td>1</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="footnote">Point counts come from a spatial join between the points and the tehsil outlines. Kohat Tehsil holds the city, the cantonment and most of the branches.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="data" aria-labelledby="data-title">
+      <div class="viewport-content">
+        <div class="section-head">
+          <h2 id="data-title">Data and method</h2>
+          <p>The points were collected on 13 November 2026 from three sources, checked against the district outline in PostGIS, and loaded into the database.</p>
+        </div>
+
+        <div class="card-grid">
+          <article class="card">
+            <h3>Sources</h3>
+            <ul class="row-list">
+              <li><div><strong>HBL branch locator</strong><span>Branch names and coordinates listed for the Peshawar region, kept where they fall inside Kohat District</span></div><em>12 branches</em></li>
+              <li><div><strong>Allied Bank locator</strong><span>Branches and off-site ATMs listed under Kohat, with address, phone and hours</span></div><em>7 points</em></li>
+              <li><div><strong>OpenStreetMap</strong><span>Features tagged <code>amenity=bank</code> or <code>amenity=atm</code>, downloaded with the Overpass API</span></div><em>5 points</em></li>
+              <li><div><strong>Boundaries</strong><span>District and tehsil relations from OpenStreetMap</span></div><em>5 outlines</em></li>
+              <li><div><strong>Population</strong><span>2023 census counts from the Pakistan Bureau of Statistics</span></div><em>4 tehsils</em></li>
+            </ul>
+          </article>
+
+          <article class="card">
+            <h3>Checks before loading</h3>
+            <ul class="check-list">
+              <li>Each point was tested with <code>ST_Within</code> against the district outline. Two Allied Bank listings, the Bannu Road and Hangu Road branches, were left out because their published coordinates fall outside Kohat District.</li>
+              <li>Three HBL banks in OpenStreetMap sat within 60 m of HBL locator points. They were merged with those points instead of being added twice.</li>
+              <li>Where a source gives no ATM, phone or opening hours, the field is left empty and the pop-up says it is not listed.</li>
+              <li>One ATM beside MCB Bank KDA has no operator in OpenStreetMap, so its bank is stored as "Not recorded".</li>
+            </ul>
+            <div class="card-actions">
+              <a class="button" href="/api/points" download="kohat-banks-atms.geojson">
+                <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
+                Get GeoJSON
+              </a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="api" aria-labelledby="api-title">
+      <div class="viewport-content">
+        <div class="section-head">
+          <h2 id="api-title">Database and API</h2>
+          <p><span id="stack-versions">PostgreSQL with PostGIS</span> stores the data. A small Express API turns each request into a parameterised SQL query and sends the result back as GeoJSON.</p>
+        </div>
+
+        <div class="card-grid">
+          <article class="card">
+            <h3>How a request works</h3>
+            <ol class="flow-list">
+              <li><strong>Browser</strong><span>The page calls <code>/api/points</code> with the current filters.</span></li>
+              <li><strong>Express</strong><span>The route checks the filters and builds a query with numbered parameters, so input never becomes SQL.</span></li>
+              <li><strong>PostGIS</strong><span><code>ST_AsGeoJSON</code> converts each point, and a view adds the tehsil with <code>ST_Within</code>.</span></li>
+              <li><strong>Leaflet</strong><span>The GeoJSON comes back and is drawn as markers with pop-ups.</span></li>
+            </ol>
+          </article>
+
+          <article class="card">
+            <h3>Endpoints</h3>
+            <ul class="endpoint-list">
+              <li><a href="/api/points" target="_blank" rel="noopener"><code>GET /api/points</code><span class="visually-hidden"> (opens in a new tab)</span></a><span>All points. Filters: <code>type</code>, <code>bank</code>, <code>tehsil</code>, <code>q</code></span></li>
+              <li><a href="/api/points/1" target="_blank" rel="noopener"><code>GET /api/points/1</code><span class="visually-hidden"> (opens in a new tab)</span></a><span>One point by id</span></li>
+              <li><a href="/api/nearest?lat=33.5869&amp;lng=71.4429&amp;limit=3" target="_blank" rel="noopener"><code>GET /api/nearest?lat=&amp;lng=</code><span class="visually-hidden"> (opens in a new tab)</span></a><span>Closest points with distance in metres</span></li>
+              <li><a href="/api/study-area" target="_blank" rel="noopener"><code>GET /api/study-area</code><span class="visually-hidden"> (opens in a new tab)</span></a><span>District and tehsil outlines with population, area and point count</span></li>
+              <li><a href="/api/summary" target="_blank" rel="noopener"><code>GET /api/summary</code><span class="visually-hidden"> (opens in a new tab)</span></a><span>Counts by bank, type and tehsil</span></li>
+              <li><a href="/api/health" target="_blank" rel="noopener"><code>GET /api/health</code><span class="visually-hidden"> (opens in a new tab)</span></a><span>Database and PostGIS versions</span></li>
+            </ul>
+          </article>
+        </div>
+
+        <details class="card schema">
+          <summary>Columns of the <code>banking_points</code> table</summary>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Notes</th></tr></thead>
+              <tbody>
+                <tr><th scope="row"><code>id</code></th><td>serial</td><td>Primary key</td></tr>
+                <tr><th scope="row"><code>name</code></th><td>text</td><td>Required, 2 to 120 characters</td></tr>
+                <tr><th scope="row"><code>bank</code></th><td>text</td><td>Indexed for the bank filter</td></tr>
+                <tr><th scope="row"><code>facility_type</code></th><td>text</td><td>Branch or ATM, enforced by a CHECK constraint</td></tr>
+                <tr><th scope="row"><code>atm_on_site</code></th><td>boolean</td><td>Branches only; empty when the source does not say</td></tr>
+                <tr><th scope="row"><code>address</code>, <code>locality</code></th><td>text</td><td>Locality is required</td></tr>
+                <tr><th scope="row"><code>phone</code>, <code>opening_hours</code></th><td>text</td><td>As published by the bank</td></tr>
+                <tr><th scope="row"><code>source</code>, <code>source_ref</code></th><td>text</td><td>Where the record came from, with the locator code or OSM id</td></tr>
+                <tr><th scope="row"><code>checked_on</code></th><td>date</td><td>Date the source was read</td></tr>
+                <tr><th scope="row"><code>geom</code></th><td>geometry(Point, 4326)</td><td>WGS 84 location with a GiST index</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="footnote">A second table, <code>study_area</code>, holds the district and tehsil outlines as <code>geometry(MultiPolygon, 4326)</code>. The view <code>banking_points_view</code> joins the two.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="viewport-content">
+      <p><strong>Muhammad Abdullah</strong> (FA23-BRG-040), Department of Remote Sensing and GIS, COMSATS University Islamabad. Web GIS Application, Fall 2026.</p>
+      <p>Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, available under the ODbL. Imagery © Esri. Branch details from the HBL and Allied Bank locators, read on 13 November 2026. Population from the Pakistan Bureau of Statistics, 2023 census.</p>
+    </div>
+  </footer>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
