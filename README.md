@@ -2,6 +2,7 @@
 
 A dynamic Web GIS of bank branches and ATMs in Kohat District, Khyber Pakhtunkhwa. The locations are stored in PostgreSQL with PostGIS, served by an Express API as GeoJSON, and drawn on a Leaflet map.
 
+- **Live site:** https://kohat-banks-atms-web-gis.vercel.app (hosted on Vercel with a Neon PostgreSQL database)
 - **Course:** Web GIS Application, midterm project (Fall 2026)
 - **Student:** Muhammad Abdullah (FA23-BRG-040), Department of Remote Sensing and GIS, COMSATS University Islamabad
 - **Study area:** Kohat District (Kohat, Lachi, Gumbat and Dara Adam Khel tehsils)
