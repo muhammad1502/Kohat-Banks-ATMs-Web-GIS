@@ -64,9 +64,23 @@ $("#brand").addEventListener("click", event => {
 });
 
 /* Map */
-// maxBounds is set after the first view: Leaflet cannot clamp a map that has no centre yet.
+// fitBounds needs the map's size. A page opened in a hidden or zero-size window has none yet,
+// so it starts from a fixed view and fits the district on the first resize instead.
+// maxBounds comes after the first view because Leaflet cannot clamp a map with no centre.
 const map = L.map("map", { zoomSnap: 0.25, minZoom: 8 });
-map.fitBounds(KOHAT_BOUNDS, { padding: [12, 12] });
+const fitDistrict = () => map.fitBounds(KOHAT_BOUNDS, { padding: [12, 12] });
+const hasSize = () => map.getSize().x > 0 && map.getSize().y > 0;
+if (hasSize()) {
+  fitDistrict();
+} else {
+  map.setView([33.39, 71.5], 9);
+  const refit = () => {
+    if (!hasSize()) return;
+    map.off("resize", refit);
+    fitDistrict();
+  };
+  map.on("resize", refit);
+}
 map.setMaxBounds([[32.4, 70.2], [34.4, 72.8]]);
 
 const streets = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
