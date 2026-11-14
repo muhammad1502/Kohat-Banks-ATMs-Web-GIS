@@ -65,7 +65,7 @@ $("#brand").addEventListener("click", event => {
 
 /* Map */
 // maxBounds is set after the first view: Leaflet cannot clamp a map that has no centre yet.
-const map = L.map("map", { zoomSnap: 0.25, minZoom: 8, center: [33.39, 71.5], zoom: 9 });
+const map = L.map("map", { zoomSnap: 0.25, minZoom: 8 });
 map.fitBounds(KOHAT_BOUNDS, { padding: [12, 12] });
 map.setMaxBounds([[32.4, 70.2], [34.4, 72.8]]);
 
