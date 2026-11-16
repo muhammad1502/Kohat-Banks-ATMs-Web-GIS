@@ -22,6 +22,7 @@ A dynamic Web GIS of bank branches and ATMs in Kohat District, Khyber Pakhtunkhw
 
 ```
 data/kohat-banks-atms.csv         the collected dataset (24 rows)
+data/kohat_banks_inserted_data.csv  the same 24 rows exported from the database, with id and tehsil
 data/kohat-boundaries.geojson     district and tehsil outlines
 db/01_schema.sql                  tables, constraints, indexes and the view
 db/02_study_area.sql              loads the outlines
